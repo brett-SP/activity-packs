@@ -1,0 +1,970 @@
+<title>Activity Packs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+/* ============================================================
+   ACTIVITY PACKS — a card-pack activity picker
+   Tunable knobs live in the CONFIG block at the top of the script.
+   ============================================================ */
+
+:root {
+  /* night toy-box (default = dark world) */
+  --bg: #191341;
+  --bg-deep: #100b2e;
+  --surface: #251c56;
+  --surface-2: #2f2568;
+  --ink: #f4f1ff;
+  --ink-soft: #b9b0e6;
+  --line: #3d3280;
+  --accent: #ffc83d;
+  --accent-ink: #3a2a00;
+  --go: #2ec4b6;
+  --go-deep: #1d9c90;
+  --danger: #ff5d73;
+  --bronze: #c77b45;
+  --silver: #b9c6d8;
+  --gold: #ffc83d;
+  --card-face: #fffdf6;
+  --card-ink: #2b2350;
+  --star-opacity: 1;
+  --btn-shadow: rgba(0,0,0,.45);
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #eef1fb;
+    --bg-deep: #dfe5f6;
+    --surface: #ffffff;
+    --surface-2: #f3f0ff;
+    --ink: #2b2350;
+    --ink-soft: #6f679c;
+    --line: #d8d4ee;
+    --accent: #f5a800;
+    --accent-ink: #3a2a00;
+    --card-face: #ffffff;
+    --card-ink: #2b2350;
+    --star-opacity: 0;
+    --btn-shadow: rgba(43,35,80,.25);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #191341; --bg-deep: #100b2e; --surface: #251c56; --surface-2: #2f2568;
+  --ink: #f4f1ff; --ink-soft: #b9b0e6; --line: #3d3280;
+  --accent: #ffc83d; --accent-ink: #3a2a00;
+  --card-face: #fffdf6; --card-ink: #2b2350;
+  --star-opacity: 1; --btn-shadow: rgba(0,0,0,.45);
+}
+:root[data-theme="light"] {
+  --bg: #eef1fb; --bg-deep: #dfe5f6; --surface: #ffffff; --surface-2: #f3f0ff;
+  --ink: #2b2350; --ink-soft: #6f679c; --line: #d8d4ee;
+  --accent: #f5a800; --accent-ink: #3a2a00;
+  --card-face: #ffffff; --card-ink: #2b2350;
+  --star-opacity: 0; --btn-shadow: rgba(43,35,80,.25);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: ui-rounded, "SF Pro Rounded", "Nunito", "Comfortaa", "Segoe UI", system-ui, sans-serif;
+  background:
+    radial-gradient(1000px 600px at 50% -10%, var(--surface-2), transparent 70%),
+    var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  min-height: 100dvh;
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior: none;
+}
+
+/* twinkly stars on the dark ground only */
+.stars {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  opacity: var(--star-opacity);
+  transition: opacity .3s;
+}
+.stars span {
+  position: absolute; color: #cfc6ff; font-size: 10px;
+  animation: twinkle 3s ease-in-out infinite;
+}
+@keyframes twinkle { 0%,100% { opacity: .25 } 50% { opacity: .9 } }
+
+.app {
+  position: relative; z-index: 1;
+  max-width: 640px; margin: 0 auto;
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+  padding: 12px 16px calc(86px + env(safe-area-inset-bottom));
+}
+
+header.top {
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px 0 2px;
+}
+.logo {
+  font-size: 22px; font-weight: 800; letter-spacing: .5px;
+  display: flex; align-items: center; gap: 8px;
+}
+.logo .spark { color: var(--accent); }
+
+main { flex: 1; display: flex; flex-direction: column; }
+
+/* ---------- big toy buttons ---------- */
+.btn {
+  font-family: inherit;
+  border: none; cursor: pointer;
+  border-radius: 999px;
+  font-size: 20px; font-weight: 800;
+  padding: 16px 30px;
+  color: #fff;
+  background: var(--go);
+  box-shadow: 0 5px 0 var(--go-deep), 0 8px 18px var(--btn-shadow);
+  transition: transform .08s, box-shadow .08s;
+  touch-action: manipulation;
+}
+.btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--go-deep), 0 3px 8px var(--btn-shadow); }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.btn.gold { background: var(--accent); color: var(--accent-ink); box-shadow: 0 5px 0 #c99312, 0 8px 18px var(--btn-shadow); }
+.btn.gold:active { box-shadow: 0 1px 0 #c99312, 0 3px 8px var(--btn-shadow); }
+.btn.ghost {
+  background: transparent; color: var(--ink-soft);
+  box-shadow: none; font-size: 16px; font-weight: 700; padding: 10px 18px;
+}
+.btn.ghost:active { transform: translateY(2px); }
+.btn:disabled { opacity: .45; pointer-events: none; }
+
+/* ---------- pack screen ---------- */
+.stage {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px;
+  text-align: center;
+}
+.stage h2 { font-size: 24px; font-weight: 800; margin: 0; text-wrap: balance; }
+.stage .hint { color: var(--ink-soft); font-size: 16px; margin: 0; }
+
+/* the pack itself — pure CSS */
+.pack {
+  position: relative;
+  width: 220px; height: 300px;
+  cursor: pointer;
+  border: none; padding: 0; background: none;
+  font-family: inherit;
+  touch-action: manipulation;
+}
+.pack:focus-visible { outline: 3px solid var(--accent); outline-offset: 6px; border-radius: 18px; }
+.pack .wrap {
+  position: absolute; inset: 0;
+  border-radius: 14px;
+  background:
+    radial-gradient(140px 90px at 50% 42%, rgba(255,255,255,.28), transparent 70%),
+    linear-gradient(135deg, #6a4df5 0%, #9b5de5 30%, #ff5d73 65%, #ffc83d 100%);
+  box-shadow: 0 14px 30px var(--btn-shadow), inset 0 0 0 3px rgba(255,255,255,.25);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+}
+.pack .wrap::before, .pack .wrap::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 20px;
+  background: inherit; filter: brightness(1.15);
+  clip-path: polygon(0 100%, 5% 0, 10% 100%, 15% 0, 20% 100%, 25% 0, 30% 100%, 35% 0, 40% 100%, 45% 0, 50% 100%, 55% 0, 60% 100%, 65% 0, 70% 100%, 75% 0, 80% 100%, 85% 0, 90% 100%, 95% 0, 100% 100%);
+}
+.pack .wrap::before { top: -10px; }
+.pack .wrap::after  { bottom: -10px; transform: scaleY(-1); }
+.pack .emoji { font-size: 74px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.35)); }
+.pack .name {
+  font-weight: 800; font-size: 19px; letter-spacing: 2px; color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,.35);
+}
+.pack .sub { font-size: 12px; font-weight: 700; letter-spacing: 3px; color: rgba(255,255,255,.85); }
+.pack.bounce { animation: packbounce 2.2s ease-in-out infinite; }
+@keyframes packbounce { 0%,100% { transform: translateY(0) rotate(-1.5deg) } 50% { transform: translateY(-10px) rotate(1.5deg) } }
+.pack.shake { animation: packshake .5s ease-in-out; }
+@keyframes packshake {
+  0%,100% { transform: rotate(0) }
+  15% { transform: rotate(-7deg) scale(1.03) }
+  35% { transform: rotate(7deg) scale(1.05) }
+  55% { transform: rotate(-6deg) scale(1.07) }
+  75% { transform: rotate(5deg) scale(1.09) }
+}
+.pack.pop { animation: packpop .3s ease-in forwards; }
+@keyframes packpop { to { transform: scale(1.3); opacity: 0 } }
+
+/* burst particles */
+.burst { position: absolute; inset: 0; pointer-events: none; }
+.burst span {
+  position: absolute; left: 50%; top: 50%;
+  font-size: 22px; color: var(--accent);
+  animation: fly .8s ease-out forwards;
+}
+@keyframes fly {
+  from { transform: translate(-50%,-50%) scale(.4); opacity: 1 }
+  to   { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2) rotate(120deg); opacity: 0 }
+}
+
+/* ---------- the card ---------- */
+.flip { perspective: 1200px; width: min(72vw, 290px); }
+.flip-inner {
+  position: relative; width: 100%; aspect-ratio: 63 / 88;
+  transform-style: preserve-3d;
+  transition: transform .65s cubic-bezier(.2,.7,.3,1.1);
+  transform: rotateY(180deg);
+}
+.flip.shown .flip-inner { transform: rotateY(0deg); }
+.face {
+  position: absolute; inset: 0; backface-visibility: hidden;
+  border-radius: 16px; overflow: hidden;
+}
+.face.back {
+  transform: rotateY(180deg);
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.07) 0 12px, transparent 12px 24px),
+    radial-gradient(circle at 50% 50%, #5b46d9, #2e2378 70%);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 0 0 8px #241b54;
+}
+.face.back .orb {
+  width: 92px; height: 92px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe9a8, var(--accent) 60%, #d98f00);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 44px; box-shadow: 0 0 30px rgba(255,200,61,.55);
+}
+.face.front {
+  background: var(--card-face); color: var(--card-ink);
+  display: flex; flex-direction: column;
+  box-shadow: inset 0 0 0 8px var(--cat, #9b5de5), inset 0 0 0 10px rgba(255,255,255,.6);
+  padding: 16px 16px 12px;
+}
+.cardname {
+  font-size: 19px; font-weight: 800; line-height: 1.1;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 2px 2px 10px;
+}
+.catchip {
+  font-size: 11px; font-weight: 800; letter-spacing: 1px;
+  color: #fff; background: var(--cat, #9b5de5);
+  padding: 4px 9px; border-radius: 999px; white-space: nowrap;
+}
+.art {
+  flex: 1; border-radius: 10px;
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--cat) 30%, white), color-mix(in srgb, var(--cat) 70%, white));
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(64px, 18vw, 96px);
+  border: 2px solid color-mix(in srgb, var(--cat) 60%, black 10%);
+}
+.flavor {
+  font-size: 14.5px; line-height: 1.35; font-weight: 600;
+  margin: 12px 4px 4px; min-height: 3.9em;
+  color: var(--card-ink);
+}
+.sticker-row { display: flex; gap: 5px; margin: 0 2px; min-height: 22px; align-items: center; }
+
+/* foil stickers */
+.sticker {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; color: #fff;
+  box-shadow: inset 0 -2px 3px rgba(0,0,0,.25), inset 0 2px 3px rgba(255,255,255,.5), 0 1px 3px rgba(0,0,0,.3);
+}
+.sticker.bronze { background: radial-gradient(circle at 35% 30%, #e8a76b, var(--bronze) 70%); }
+.sticker.silver { background: radial-gradient(circle at 35% 30%, #eef3f9, var(--silver) 70%); color: #5a6b80; }
+.sticker.gold   { background: radial-gradient(circle at 35% 30%, #ffe9a8, var(--gold) 70%); color: #8a6200; }
+.sticker.big { width: 74px; height: 74px; font-size: 40px; }
+.sticker.drop { animation: stickerdrop .6s cubic-bezier(.2,.8,.3,1.4) both; }
+@keyframes stickerdrop {
+  from { transform: scale(2.6) rotate(-30deg); opacity: 0 }
+  to   { transform: scale(1) rotate(-8deg); opacity: 1 }
+}
+
+/* ---------- reveal / active controls ---------- */
+.controls { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.controls.fadein { animation: fadeup .5s .5s ease-out both; }
+@keyframes fadeup { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: none } }
+
+/* timer meter */
+.meter-wrap { width: min(78vw, 320px); display: flex; flex-direction: column; gap: 6px; }
+.elapsed { font-size: 40px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+.meter {
+  position: relative; height: 18px; border-radius: 999px;
+  background: var(--surface-2); overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.25);
+}
+.meter .fill {
+  position: absolute; inset: 0 auto 0 0; width: 0%;
+  background: linear-gradient(90deg, var(--bronze), var(--silver) 38%, var(--gold) 90%);
+  border-radius: 999px;
+  transition: width 1s linear;
+}
+.meter .mark { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,.55); }
+.meter-legend { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--ink-soft); }
+.nexttier { font-size: 15px; font-weight: 700; color: var(--ink-soft); min-height: 1.4em; }
+
+/* cooldown */
+.cooldown-box {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  background: var(--surface); border: 2px solid var(--line);
+  border-radius: 20px; padding: 24px 34px;
+}
+.cooldown-box .clock { font-size: 46px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent); }
+.zzz { font-size: 52px; animation: snooze 3s ease-in-out infinite; }
+@keyframes snooze { 0%,100% { transform: rotate(-4deg) } 50% { transform: rotate(4deg) translateY(-6px) } }
+
+/* ---------- award overlay ---------- */
+.overlay {
+  position: fixed; inset: 0; z-index: 40;
+  background: color-mix(in srgb, var(--bg-deep) 88%, transparent);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.award {
+  display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center;
+  max-width: 340px;
+}
+.award h2 { margin: 0; font-size: 28px; }
+.award p { margin: 0; color: var(--ink-soft); font-size: 17px; font-weight: 600; }
+
+/* ---------- binder ---------- */
+.binder-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin: 10px 2px 14px;
+}
+.binder-head h2 { margin: 0; font-size: 24px; }
+.binder-head .count { font-size: 15px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+}
+@media (min-width: 480px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+.slot {
+  aspect-ratio: 63 / 88; border-radius: 12px; position: relative;
+  border: none; padding: 8px 7px; font-family: inherit; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  touch-action: manipulation;
+}
+.slot:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.slot.locked {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--line);
+  color: var(--ink-soft);
+}
+.slot.locked .bigmoji { filter: grayscale(1) brightness(.6) contrast(.7); opacity: .55; }
+.slot.owned {
+  background: var(--card-face); color: var(--card-ink);
+  box-shadow: inset 0 0 0 3px var(--cat, #9b5de5), 0 4px 10px var(--btn-shadow);
+}
+.slot .bigmoji { font-size: 34px; }
+.slot .slotname { font-size: 11px; font-weight: 800; line-height: 1.15; text-align: center; }
+.slot .slotstickers { position: absolute; top: 5px; right: 5px; display: flex; gap: 2px; }
+.slot .slotstickers .sticker { width: 16px; height: 16px; font-size: 9px; }
+.slot .times { font-size: 10px; font-weight: 800; color: var(--ink-soft); }
+
+.binder-foot {
+  text-align: center; color: var(--ink-soft);
+  font-size: 12px; font-weight: 600; margin-top: 18px; padding-bottom: 6px;
+}
+
+/* card detail overlay reuses .overlay */
+.detail { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.detail .stats { color: var(--ink-soft); font-weight: 700; font-size: 15px; }
+
+/* ---------- tab bar ---------- */
+nav.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: flex; justify-content: center; gap: 12px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--bg-deep) 92%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-top: 2px solid var(--line);
+}
+.tab {
+  font-family: inherit; border: none; cursor: pointer;
+  flex: 1; max-width: 220px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 17px; font-weight: 800;
+  padding: 12px 10px; border-radius: 16px;
+  background: transparent; color: var(--ink-soft);
+  touch-action: manipulation;
+}
+.tab.active { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 2px var(--line); }
+.tab:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.tab .badge {
+  background: var(--accent); color: var(--accent-ink);
+  font-size: 12px; border-radius: 999px; padding: 2px 8px; font-variant-numeric: tabular-nums;
+}
+
+.hidden { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="stars" id="stars"></div>
+
+<div class="app">
+  <header class="top">
+    <div class="logo"><span class="spark">✦</span> Activity Packs <span class="spark">✦</span></div>
+  </header>
+
+  <main>
+    <section id="view-pack" class="stage"></section>
+    <section id="view-binder" class="hidden"></section>
+  </main>
+</div>
+
+<nav class="tabs">
+  <button class="tab active" id="tab-pack" type="button">🎁 Packs</button>
+  <button class="tab" id="tab-binder" type="button">📖 My Binder <span class="badge" id="binder-badge">0</span></button>
+</nav>
+
+<div id="overlay-root"></div>
+
+<script>
+'use strict';
+
+/* ================= CONFIG — the tunable knobs ================= */
+const CONFIG = {
+  REROLLS: 1,              // swaps allowed per pack
+  COOLDOWN_MIN: 20,        // minutes before the next pack unlocks
+  SILVER_MIN: 15,          // minutes of activity for a silver sticker
+  GOLD_MIN: 40,            // minutes of activity for a gold sticker
+  METER_MAX_MIN: 45,       // minutes = full meter bar
+};
+
+/* ================= ACTIVITY DATABASE =================
+   ids are permanent — save data is keyed on them.
+   Edit names/emoji/flavor freely; only add/remove ids deliberately. */
+const CATS = {
+  make:    { label: 'MAKE',    color: '#ff6b6b' },
+  move:    { label: 'MOVE',    color: '#2ec4b6' },
+  play:    { label: 'PLAY',    color: '#9b5de5' },
+  explore: { label: 'EXPLORE', color: '#7cb518' },
+  collect: { label: 'COLLECT', color: '#ff9f1c' },
+  chill:   { label: 'CHILL',   color: '#4cc9f0' },
+};
+
+/* Optional per-card `weight` (default 1) tilts draw odds — e.g. weight: 2 shows up twice as often. */
+const ACTIVITIES = [
+  /* ---- MAKE ---- */
+  { id: "lego-grab-bag",     cat: "make", emoji: "🧱", name: "Grab-Bag Builder",   flavor: "Grab one big handful of random LEGO. Build something using every single piece." },
+  { id: "lego-crash-test",   cat: "make", emoji: "🚗", name: "Crash Test Lab",     flavor: "Build a LEGO vehicle that can survive a drop from your loft bed. Test it!" },
+  { id: "boss-arena",        cat: "make", emoji: "🏟️", name: "Boss Arena",         flavor: "Build a boss arena for one of your stuffies out of LEGO or magna-tiles." },
+  { id: "lego-mini-room",    cat: "make", emoji: "🛋️", name: "Mini World",         flavor: "Pick a room in the house and build a tiny LEGO version of it." },
+  { id: "pixel-art",         cat: "make", emoji: "🟥", name: "Pixel Artist",       flavor: "Make pixel art of a video game character with your tiles or blocks." },
+  { id: "tile-tower",        cat: "make", emoji: "🗼", name: "Sky Tower",          flavor: "Build a magna-tile tower taller than your arm. Now make it taller." },
+  { id: "stop-motion",       cat: "make", emoji: "🎬", name: "Movie Director",     flavor: "Make a stop-motion movie with the iPad. At least 30 photos!" },
+  { id: "boss-design",       cat: "make", emoji: "🐲", name: "Boss Designer",      flavor: "Invent and draw a new video game boss. Name its three attacks." },
+  { id: "gd-paper-level",    cat: "make", emoji: "📐", name: "Level Designer",     flavor: "Design a Geometry Dash level on paper. Spikes, portals, the works." },
+  { id: "mario-paper-level", cat: "make", emoji: "🍄", name: "Paper Mario Maker",  flavor: "Draw your own Mario level. It needs a secret exit." },
+  { id: "kirby-ability",     cat: "make", emoji: "⭐", name: "Copy Ability Lab",   flavor: "Invent a new Kirby copy ability. Draw Kirby using it." },
+  { id: "fakemon",           cat: "make", emoji: "🐣", name: "Fakémon Creator",    flavor: "Invent a brand-new Pokemon. Draw it and write its card stats." },
+  { id: "build-box",         cat: "make", emoji: "📦", name: "Mystery Box",        flavor: "Pick ONE build box from the shelf and do its next project. Ask a grown-up to set up if it is messy." },
+  { id: "flight-lab",        cat: "make", emoji: "✈️", name: "Flight Lab",         flavor: "Fold 3 different paper airplanes. Which flies farthest off the deck?" },
+  { id: "comic-strip",       cat: "make", emoji: "🖍️", name: "Comic Creator",      flavor: "Draw a 3-panel comic where a stuffy goes on an adventure." },
+  { id: "album-cover",       cat: "make", emoji: "🎵", name: "Album Cover Artist", flavor: "Play video game music and draw the album cover it deserves." },
+  { id: "arcade-design",     cat: "make", emoji: "🕹️", name: "Arcade Inventor",    flavor: "Design your own arcade cabinet on paper: the art, the controls, the game." },
+  { id: "clicker-paper",     cat: "make", emoji: "🍪", name: "Clicker Tycoon",     flavor: "Invent a clicker game on paper. What do you collect? Draw the upgrade tree!" },
+
+  /* ---- MOVE ---- */
+  { id: "nerf-range",        cat: "move", emoji: "🎯", name: "Target Range",       flavor: "Set up 6 targets for a Nerf course. Score a round, then beat your score." },
+  { id: "trick-shot",        cat: "move", emoji: "🌀", name: "Trick Shot",         flavor: "Invent 5 Nerf trick shots. How many can you land?" },
+  { id: "balloon-battle",    cat: "move", emoji: "🎈", name: "Balloon Battle",     flavor: "Keep a balloon off the floor. Left hand only. Then feet only. Best streak?" },
+  { id: "ninja-course",      cat: "move", emoji: "🥷", name: "Ninja Course",       flavor: "Build an obstacle course through the house. Three runs, beat your time." },
+  { id: "wall-ball",         cat: "move", emoji: "⚽", name: "Wall Ball",          flavor: "Bounce a ball off a wall and catch it 20 times in a row. Then make it fancy." },
+  { id: "animal-dungeon",    cat: "move", emoji: "🦎", name: "Animal Dungeon",     flavor: "Every room is a dungeon level. Cross each one moving like a different animal." },
+  { id: "vgm-dance",         cat: "move", emoji: "🕺", name: "Dance Machine",      flavor: "Put on a video game banger and dance the entire track. Full commitment." },
+  { id: "stuffy-free-throw", cat: "move", emoji: "🧺", name: "Stuffy Free Throws", flavor: "Set up a basket across the room. How many stuffy shots out of 10?" },
+  { id: "floor-lava",        cat: "move", emoji: "🌋", name: "The Floor Is Lava",  flavor: "Get from your room to the kitchen without touching the floor." },
+  { id: "hero-training",     cat: "move", emoji: "💪", name: "Hero Training",      flavor: "Training montage: 10 jumps, 10 kicks, 10 rolls, victory pose. Three rounds." },
+
+  /* ---- EXPLORE ---- */
+  { id: "deck-patrol",       cat: "explore", emoji: "🛡️", name: "Deck Patrol",      flavor: "Suit up with a foam sword and patrol the whole deck. Report anything suspicious." },
+  { id: "wizard-staff",      cat: "explore", emoji: "🪄", name: "Wizard Staff",     flavor: "Find the best stick out there and claim it as your wizard staff. Decorate it." },
+  { id: "excavation",        cat: "explore", emoji: "⛏️", name: "Excavation Site",  flavor: "Dig in the dirt like it is Minecraft. What is the coolest thing you find?" },
+  { id: "rock-hunt",         cat: "explore", emoji: "💎", name: "Rock Prospector",  flavor: "Hunt outside for 3 rocks worthy of your collection. Wash them and add them." },
+  { id: "nature-pixel",      cat: "explore", emoji: "🍂", name: "Nature Pixel Art", flavor: "Make pixel art on the deck out of leaves, rocks, and sticks." },
+  { id: "cloud-spotting",    cat: "explore", emoji: "☁️", name: "Cloud Spotter",    flavor: "Lie on the deck and find 5 shapes in the clouds. Bonus for a Pokemon." },
+  { id: "playground-trials", cat: "explore", emoji: "🛝", name: "Playground Trials",flavor: "Playground triathlon: swings, dome climb, plus one event you invent." },
+  { id: "yard-map",          cat: "explore", emoji: "🗺️", name: "World Map Maker",  flavor: "Draw a video game world map of the yard and deck. Name every zone." },
+  { id: "photo-safari",      cat: "explore", emoji: "📷", name: "Photo Safari",     flavor: "Take 8 super-close-up photos outside. Quiz the family: what IS that?" },
+  { id: "yard-speedrun",     cat: "explore", emoji: "🏁", name: "Yard Speedrun",    flavor: "Invent a route around the deck and speedrun it. Three tries, best time." },
+  { id: "base-camp",         cat: "explore", emoji: "⛺", name: "Base Camp",        flavor: "Set up an outdoor base on the deck: blanket, supplies, lookout post." },
+
+  /* ---- PLAY ---- */
+  { id: "solitaire",         cat: "play", emoji: "🃏", name: "Card Shark",        flavor: "Learn or play a solitaire game with real cards. Win one game." },
+  { id: "tile-rack",         cat: "play", emoji: "🀄", name: "Rack Attack",       flavor: "Deal yourself a Rummikub rack and try to play every tile out, solo." },
+  { id: "dice-arena",        cat: "play", emoji: "🎲", name: "Dice Arena",        flavor: "Pick 6 dice and invent a battle game with them. Write down the rules." },
+  { id: "both-sides",        cat: "play", emoji: "♟️", name: "Party of One",      flavor: "Pick a board game and play both sides. May the best you win." },
+  { id: "shelf-rescue",      cat: "play", emoji: "🦖", name: "Shelf Rescue",      flavor: "Rescue a toy you have not touched in ages. Give it its best adventure ever." },
+  { id: "transformers",      cat: "play", emoji: "🤖", name: "Transformers Time", flavor: "Go play with Dad's old Transformers. Master transforming one." },
+  { id: "chain-reaction",    cat: "play", emoji: "🎳", name: "Chain Reaction",    flavor: "Build a domino run with one trick: a bridge, a split, or a tunnel. Film the topple!" },
+  { id: "grand-prix",        cat: "play", emoji: "🏎️", name: "Grand Prix",        flavor: "Build a Matchbox track with a jump. Race 8 cars in a bracket. Crown a champion." },
+  { id: "train-loop",        cat: "play", emoji: "🚂", name: "Loop Engineer",     flavor: "Build a Brio layout where the train can run forever without your help." },
+  { id: "fort-kingdom",      cat: "play", emoji: "🏰", name: "Fort Kingdom",      flavor: "Build a fort with a door, a window, and a treasure room. Stock the treasure." },
+  { id: "stuffy-olympics",   cat: "play", emoji: "🥇", name: "Stuffy Olympics",   flavor: "Run 3 Olympic events for your stuffies. Hold a medal ceremony." },
+  { id: "trap-master",       cat: "play", emoji: "🪤", name: "Trap Master",       flavor: "Build a harmless trap or door alarm for your room. Who springs it first?" },
+  { id: "dungeon-master",    cat: "play", emoji: "🗝️", name: "Dungeon Master",    flavor: "Hide a treasure and write 3 clues. Give the hunt to someone later." },
+  { id: "puzzle-sprint",     cat: "play", emoji: "🧩", name: "Puzzle Sprint",     flavor: "Jigsaw challenge: finish the border or 50 pieces, whichever comes first." },
+  { id: "plus-plus-creature",cat: "play", emoji: "🧬", name: "Creature Lab",      flavor: "Build a creature from Plus-Plus. Give it a name, a type, and a battle cry." },
+  { id: "wacky-machine",     cat: "play", emoji: "⚙️", name: "Wacky Machine",     flavor: "Build a Tinker Toy machine that does something completely silly." },
+  { id: "stuffy-hideout",    cat: "play", emoji: "🙈", name: "Hide Squad",        flavor: "Hide 5 stuffies around the house. Make a checklist for someone to find them." },
+  { id: "minecraft-irl",     cat: "play", emoji: "🧊", name: "IRL Crafting",      flavor: "Pick something from Minecraft and build it in the real world, any toys allowed." },
+
+  /* ---- COLLECT ---- */
+  { id: "type-sort-sprint",  cat: "collect", emoji: "🔥", name: "Type Sort Sprint",  flavor: "15-minute timer: sort Pokemon cards by type. Your total is your high score." },
+  { id: "dream-binder",      cat: "collect", emoji: "📇", name: "Dream Team Binder", flavor: "Pick the 9 best cards for one binder page. Defend your picks at dinner." },
+  { id: "rare-hunter",       cat: "collect", emoji: "✨", name: "Rare Hunter",       flavor: "Dig through unsorted cards until you find 5 rares or holos. Read each one out loud." },
+  { id: "museum-curator",    cat: "collect", emoji: "🏛️", name: "Museum Curator",    flavor: "Pick your 10 best rocks and crystals. Set up an exhibit with name labels." },
+  { id: "coin-detective",    cat: "collect", emoji: "🪙", name: "Coin Detective",    flavor: "Find the oldest coin in your whole collection. That is your treasure of the day." },
+  { id: "rainbow-sort",      cat: "collect", emoji: "🌈", name: "Rainbow Sort",      flavor: "Sort your crystals into a rainbow by color. Photograph your masterpiece." },
+  { id: "tier-list",         cat: "collect", emoji: "📊", name: "Tier List Time",    flavor: "Make an S-to-F tier list of your fidgets. Be ruthless." },
+  { id: "stuffy-census",     cat: "collect", emoji: "🧸", name: "Stuffy Census",     flavor: "Rank your top 10 stuffies. Interview the champion about the victory." },
+  { id: "shelf-dig",         cat: "collect", emoji: "🏺", name: "Shelf Archaeologist", flavor: "Excavate one shelf: find 3 forgotten treasures and put them where you will use them." },
+
+  /* ---- CHILL ---- */
+  { id: "comic-cave",        cat: "chill", emoji: "📚", name: "Comic Cave",        flavor: "Build a cozy nest and read a graphic novel in it." },
+  { id: "podcast-build",     cat: "chill", emoji: "🎧", name: "Podcast + Build",   flavor: "Put on a game podcast and free-build LEGO while you listen." },
+  { id: "soundtrack-safari", cat: "chill", emoji: "🎼", name: "Soundtrack Safari", flavor: "Listen to music from a game you have never played. Draw what it looks like." },
+  { id: "loft-hq",           cat: "chill", emoji: "🛏️", name: "Loft HQ",           flavor: "Turn your loft bed into a headquarters: supplies, gadgets, mission board." },
+  { id: "power-snack",       cat: "chill", emoji: "🥪", name: "Power-Up Chef",     flavor: "Build yourself a power-up snack worthy of a video game. Name it." },
+  { id: "story-boss",        cat: "chill", emoji: "📖", name: "Story Time Boss",   flavor: "Read a story out loud to your stuffies. Do all the voices." },
+];
+
+/* ================= SAVE ================= */
+const SAVE_KEY = 'activity-packs-save-v1';
+const TIER_RANK = { bronze: 1, silver: 2, gold: 3 };
+
+function freshSave() {
+  return {
+    v: 1,
+    phase: 'idle',          // idle | revealed | active
+    cardId: null,
+    rerollsLeft: CONFIG.REROLLS,
+    startedAt: null,        // ms epoch when "Let's do it" tapped
+    cooldownUntil: 0,       // ms epoch when next pack unlocks
+    collection: {},         // id -> { count, best, minutes }
+  };
+}
+
+let save = loadSave();
+
+function loadSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return freshSave();
+    const s = JSON.parse(raw);
+    if (!s || s.v !== 1) return freshSave();
+    // heal: card id that no longer exists (activity list edited)
+    if (s.cardId && !ACTIVITIES.some(a => a.id === s.cardId)) {
+      s.phase = 'idle'; s.cardId = null; s.startedAt = null;
+    }
+    return Object.assign(freshSave(), s);
+  } catch (e) {
+    console.error('Save load failed, starting fresh:', e);
+    return freshSave();
+  }
+}
+function persist() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }
+  catch (e) { console.error('Save failed:', e); }
+}
+
+/* ================= tiny audio juice ================= */
+let audioCtx = null;
+function blip(notes) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = audioCtx.currentTime;
+    notes.forEach(([freq, at, dur]) => {
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = 'triangle'; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t0 + at);
+      g.gain.exponentialRampToValueAtTime(0.12, t0 + at + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t0 + at); o.stop(t0 + at + dur + 0.05);
+    });
+  } catch (e) { /* audio is optional */ }
+}
+const sfxPop    = () => blip([[520, 0, .12], [780, .07, .15]]);
+const sfxAward  = () => blip([[523, 0, .15], [659, .12, .15], [784, .24, .2], [1047, .38, .35]]);
+
+/* ================= helpers ================= */
+const $ = sel => document.querySelector(sel);
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function pickCard(excludeId) {
+  const pool = ACTIVITIES.filter(a => a.id !== excludeId);
+  const total = pool.reduce((sum, a) => sum + (a.weight || 1), 0);
+  let roll = Math.random() * total;
+  for (const a of pool) {
+    roll -= (a.weight || 1);
+    if (roll <= 0) return a;
+  }
+  return pool[pool.length - 1];
+}
+function getActivity(id) { return ACTIVITIES.find(a => a.id === id); }
+function fmtClock(ms) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(total / 60), s = total % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+function tierFor(minutes) {
+  if (minutes >= CONFIG.GOLD_MIN) return 'gold';
+  if (minutes >= CONFIG.SILVER_MIN) return 'silver';
+  return 'bronze';
+}
+function tierEmoji(t) { return { bronze: '★', silver: '★', gold: '★' }[t]; }
+
+function cardHTML(act, opts = {}) {
+  const cat = CATS[act.cat];
+  const stickers = save.collection[act.id];
+  let stickerDots = '';
+  if (stickers && !opts.noStickers) {
+    for (const t of ['gold', 'silver', 'bronze']) {
+      if (TIER_RANK[stickers.best] >= TIER_RANK[t]) {
+        stickerDots += `<span class="sticker ${t}">${tierEmoji(t)}</span>`;
+        break; // show best tier only on the card face
+      }
+    }
+    if (stickers.count > 1) stickerDots += `<span style="font-size:12px;font-weight:800;color:var(--ink-soft)">×${stickers.count}</span>`;
+  }
+  return `
+    <div class="face front" style="--cat:${cat.color}">
+      <div class="cardname"><span>${act.name}</span><span class="catchip">${cat.label}</span></div>
+      <div class="art">${act.emoji}</div>
+      <p class="flavor">${act.flavor}</p>
+      <div class="sticker-row">${stickerDots}</div>
+    </div>`;
+}
+function flipCardHTML(act, shown) {
+  return `
+    <div class="flip ${shown ? 'shown' : ''}" id="flipcard">
+      <div class="flip-inner">
+        <div class="face back"><div class="orb">✦</div></div>
+        ${cardHTML(act)}
+      </div>
+    </div>`;
+}
+
+/* ================= views ================= */
+const viewPack = $('#view-pack');
+const viewBinder = $('#view-binder');
+let ticker = null;
+
+function clearTicker() { if (ticker) { clearInterval(ticker); ticker = null; } }
+
+function render() {
+  clearTicker();
+  updateBadge();
+  if (save.phase === 'idle') renderIdle();
+  else if (save.phase === 'revealed') renderRevealed(true);
+  else if (save.phase === 'active') renderActive();
+}
+
+/* ----- idle: pack ready, or cooling down ----- */
+function renderIdle() {
+  const now = Date.now();
+  if (save.cooldownUntil > now) {
+    viewPack.innerHTML = `
+      <div class="zzz">🎁</div>
+      <div class="cooldown-box">
+        <h2 style="margin:0">Next pack charging...</h2>
+        <div class="clock" id="cd-clock">${fmtClock(save.cooldownUntil - now)}</div>
+        <p class="hint" style="margin:0">Go finish your fun — it will be ready soon!</p>
+      </div>`;
+    ticker = setInterval(() => {
+      const left = save.cooldownUntil - Date.now();
+      if (left <= 0) { render(); return; }
+      const el = $('#cd-clock'); if (el) el.textContent = fmtClock(left);
+    }, 500);
+    return;
+  }
+  viewPack.innerHTML = `
+    <h2>A new pack is ready!</h2>
+    <button class="pack bounce" id="pack-btn" type="button" aria-label="Open the activity pack">
+      <span class="wrap">
+        <span class="emoji">🎁</span>
+        <span class="name">ACTIVITY</span>
+        <span class="sub">✦ PACK ✦</span>
+      </span>
+      <span class="burst" id="burst"></span>
+    </button>
+    <p class="hint">Tap the pack to open it!</p>`;
+  $('#pack-btn').addEventListener('click', openPack, { once: true });
+}
+
+function openPack() {
+  const card = pickCard(null);
+  save.phase = 'revealed';
+  save.cardId = card.id;
+  save.rerollsLeft = CONFIG.REROLLS;
+  persist();
+
+  if (reduceMotion) { renderRevealed(false); return; }
+
+  const pack = $('#pack-btn');
+  pack.classList.remove('bounce');
+  pack.classList.add('shake');
+  setTimeout(() => {
+    pack.classList.remove('shake');
+    pack.classList.add('pop');
+    sfxPop();
+    const burst = $('#burst');
+    if (burst) {
+      for (let i = 0; i < 10; i++) {
+        const s = document.createElement('span');
+        const ang = (i / 10) * Math.PI * 2;
+        s.style.setProperty('--dx', `${Math.cos(ang) * 130}px`);
+        s.style.setProperty('--dy', `${Math.sin(ang) * 130}px`);
+        s.textContent = '✦';
+        burst.appendChild(s);
+      }
+    }
+    setTimeout(() => renderRevealed(false), 300);
+  }, 500);
+}
+
+/* ----- revealed: card shown, commit or swap ----- */
+function renderRevealed(instant) {
+  clearTicker();
+  const act = getActivity(save.cardId);
+  const swapLabel = save.rerollsLeft > 0
+    ? `<button class="btn ghost" id="swap-btn" type="button">🔄 Swap it (${save.rerollsLeft} left)</button>`
+    : `<p class="hint" style="margin:0">No swaps left — this is the one!</p>`;
+  viewPack.innerHTML = `
+    <h2>You got...</h2>
+    ${flipCardHTML(act, instant)}
+    <div class="controls ${instant || reduceMotion ? '' : 'fadein'}">
+      <button class="btn gold" id="go-btn" type="button">Let's do it! 🚀</button>
+      ${swapLabel}
+    </div>`;
+  if (!instant && !reduceMotion) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const f = $('#flipcard'); if (f) f.classList.add('shown');
+    }));
+  }
+  $('#go-btn').addEventListener('click', commitCard);
+  const swap = $('#swap-btn');
+  if (swap) swap.addEventListener('click', swapCard);
+}
+
+function swapCard() {
+  if (save.rerollsLeft <= 0) return;
+  save.rerollsLeft -= 1;
+  save.cardId = pickCard(save.cardId).id;
+  persist();
+  sfxPop();
+  renderRevealed(false);
+}
+
+function commitCard() {
+  save.phase = 'active';
+  save.startedAt = Date.now();
+  persist();
+  renderActive();
+}
+
+/* ----- active: doing the activity, timer running ----- */
+function renderActive() {
+  clearTicker();
+  const act = getActivity(save.cardId);
+  const cat = CATS[act.cat];
+  viewPack.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800">
+      <span style="font-size:34px">${act.emoji}</span> ${act.name}
+      <span class="catchip" style="--cat:${cat.color};background:${cat.color}">${cat.label}</span>
+    </div>
+    <div class="meter-wrap">
+      <div class="elapsed" id="elapsed">0:00</div>
+      <div class="meter">
+        <div class="fill" id="meter-fill"></div>
+        <div class="mark" style="left:${(CONFIG.SILVER_MIN / CONFIG.METER_MAX_MIN) * 100}%"></div>
+        <div class="mark" style="left:${(CONFIG.GOLD_MIN / CONFIG.METER_MAX_MIN) * 100}%"></div>
+      </div>
+      <div class="meter-legend"><span>🥉 bronze</span><span>🥈 silver</span><span>🥇 gold</span></div>
+      <div class="nexttier" id="nexttier"></div>
+    </div>
+    <div class="controls">
+      <button class="btn" id="done-btn" type="button">I did it! ✅</button>
+      <button class="btn ghost" id="back-btn" type="button">Put it back</button>
+    </div>`;
+  const tick = () => {
+    const ms = Date.now() - save.startedAt;
+    const min = ms / 60000;
+    const el = $('#elapsed'); if (!el) return;
+    el.textContent = fmtClock(ms);
+    $('#meter-fill').style.width = `${Math.min(100, (min / CONFIG.METER_MAX_MIN) * 100)}%`;
+    const nt = $('#nexttier');
+    if (min >= CONFIG.GOLD_MIN) nt.textContent = '🥇 GOLD sticker locked in!';
+    else if (min >= CONFIG.SILVER_MIN) nt.textContent = `🥈 Silver! Gold in ${Math.ceil(CONFIG.GOLD_MIN - min)} min`;
+    else nt.textContent = `🥈 Silver sticker in ${Math.ceil(CONFIG.SILVER_MIN - min)} min`;
+  };
+  tick();
+  ticker = setInterval(tick, 1000);
+  $('#done-btn').addEventListener('click', finishActivity);
+  $('#back-btn').addEventListener('click', abandonActivity);
+}
+
+function abandonActivity() {
+  save.phase = 'idle';
+  save.cardId = null;
+  save.startedAt = null;
+  save.cooldownUntil = Date.now() + CONFIG.COOLDOWN_MIN * 60000;
+  persist();
+  render();
+}
+
+function finishActivity() {
+  const act = getActivity(save.cardId);
+  const minutes = (Date.now() - save.startedAt) / 60000;
+  const tier = tierFor(minutes);
+
+  const entry = save.collection[act.id] || { count: 0, best: null, minutes: 0 };
+  entry.count += 1;
+  entry.minutes += Math.round(minutes);
+  if (!entry.best || TIER_RANK[tier] > TIER_RANK[entry.best]) entry.best = tier;
+  save.collection[act.id] = entry;
+
+  save.phase = 'idle';
+  save.cardId = null;
+  save.startedAt = null;
+  save.cooldownUntil = Date.now() + CONFIG.COOLDOWN_MIN * 60000;
+  persist();
+
+  sfxAward();
+  showAward(act, tier, minutes);
+}
+
+function showAward(act, tier, minutes) {
+  const tierName = { bronze: 'BRONZE', silver: 'SILVER', gold: 'GOLD' }[tier];
+  const medal = { bronze: '🥉', silver: '🥈', gold: '🥇' }[tier];
+  const mins = Math.max(1, Math.round(minutes));
+  const root = $('#overlay-root');
+  root.innerHTML = `
+    <div class="overlay">
+      <div class="award">
+        <span class="sticker big ${tier} ${reduceMotion ? '' : 'drop'}">★</span>
+        <h2>${medal} ${tierName} sticker!</h2>
+        <p>${act.emoji} ${act.name} — you played for ${mins} minute${mins === 1 ? '' : 's'}. Awesome!</p>
+        <button class="btn gold" id="award-ok" type="button">Add to my binder 📖</button>
+      </div>
+    </div>`;
+  $('#award-ok').addEventListener('click', () => {
+    root.innerHTML = '';
+    switchTab('binder');
+  });
+}
+
+/* ----- binder ----- */
+function renderBinder() {
+  const owned = Object.keys(save.collection).filter(id => getActivity(id)).length;
+  const slots = ACTIVITIES.map(act => {
+    const cat = CATS[act.cat];
+    const e = save.collection[act.id];
+    if (!e) {
+      return `<button class="slot locked" type="button" data-id="${act.id}" aria-label="${act.name}, not collected yet">
+        <span class="bigmoji">${act.emoji}</span>
+        <span class="slotname">???</span>
+      </button>`;
+    }
+    return `<button class="slot owned" type="button" data-id="${act.id}" style="--cat:${cat.color}" aria-label="${act.name}, collected">
+      <span class="slotstickers"><span class="sticker ${e.best}">★</span></span>
+      <span class="bigmoji">${act.emoji}</span>
+      <span class="slotname">${act.name}</span>
+      <span class="times">×${e.count}</span>
+    </button>`;
+  }).join('');
+  viewBinder.innerHTML = `
+    <div class="binder-head">
+      <h2>📖 My Binder</h2>
+      <span class="count">${owned} / ${ACTIVITIES.length}</span>
+    </div>
+    <div class="grid">${slots}</div>
+    <div class="binder-foot" id="binder-foot">Activity Packs v1.1</div>`;
+  viewBinder.querySelectorAll('.slot').forEach(btn => {
+    btn.addEventListener('click', () => showDetail(btn.dataset.id));
+  });
+  // hidden reset: 5 quick taps on the version line
+  let taps = 0, lastTap = 0;
+  $('#binder-foot').addEventListener('click', () => {
+    const now = Date.now();
+    taps = (now - lastTap < 600) ? taps + 1 : 1;
+    lastTap = now;
+    if (taps >= 5) {
+      taps = 0;
+      if (confirm('Grown-ups only: erase ALL save data (stickers, binder, timers)?')) {
+        localStorage.removeItem(SAVE_KEY);
+        save = freshSave();
+        render(); renderBinder();
+      }
+    }
+  });
+}
+
+function showDetail(id) {
+  const act = getActivity(id);
+  if (!act) return;
+  const e = save.collection[id];
+  const cat = CATS[act.cat];
+  const stats = e
+    ? `🥇🥈🥉 Best: ${e.best.toUpperCase()} · Done ×${e.count} · ${e.minutes} min total`
+    : 'Not collected yet — open packs to find it!';
+  const root = $('#overlay-root');
+  root.innerHTML = `
+    <div class="overlay" id="detail-overlay">
+      <div class="detail">
+        <div class="flip shown" style="width:min(72vw,290px)">
+          <div class="flip-inner" style="transition:none">
+            <div class="face back"><div class="orb">✦</div></div>
+            ${e ? cardHTML(act) : `
+              <div class="face front" style="--cat:${cat.color};filter:grayscale(.9) brightness(.75)">
+                <div class="cardname"><span>???</span><span class="catchip">${cat.label}</span></div>
+                <div class="art">${act.emoji}</div>
+                <p class="flavor">Mystery card! Open packs to discover it.</p>
+                <div class="sticker-row"></div>
+              </div>`}
+          </div>
+        </div>
+        <div class="stats">${stats}</div>
+        <button class="btn ghost" id="detail-close" type="button">Close ✖</button>
+      </div>
+    </div>`;
+  const close = () => { root.innerHTML = ''; };
+  $('#detail-close').addEventListener('click', close);
+  $('#detail-overlay').addEventListener('click', ev => { if (ev.target.id === 'detail-overlay') close(); });
+}
+
+/* ----- tabs ----- */
+function updateBadge() {
+  const owned = Object.keys(save.collection).filter(id => getActivity(id)).length;
+  $('#binder-badge').textContent = owned;
+}
+function switchTab(which) {
+  const packTab = $('#tab-pack'), binderTab = $('#tab-binder');
+  if (which === 'binder') {
+    viewPack.classList.add('hidden'); viewBinder.classList.remove('hidden');
+    packTab.classList.remove('active'); binderTab.classList.add('active');
+    clearTicker();
+    renderBinder();
+  } else {
+    viewBinder.classList.add('hidden'); viewPack.classList.remove('hidden');
+    binderTab.classList.remove('active'); packTab.classList.add('active');
+    render();
+  }
+}
+$('#tab-pack').addEventListener('click', () => switchTab('pack'));
+$('#tab-binder').addEventListener('click', () => switchTab('binder'));
+
+/* ----- decorative stars ----- */
+(function stars() {
+  const host = $('#stars');
+  for (let i = 0; i < 26; i++) {
+    const s = document.createElement('span');
+    s.textContent = '✦';
+    s.style.left = `${Math.random() * 100}%`;
+    s.style.top = `${Math.random() * 100}%`;
+    s.style.animationDelay = `${Math.random() * 3}s`;
+    s.style.fontSize = `${6 + Math.random() * 8}px`;
+    host.appendChild(s);
+  }
+})();
+
+render();
+</script>
