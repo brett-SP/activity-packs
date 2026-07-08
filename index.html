@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Activity Packs</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <style>
@@ -358,6 +359,59 @@ main { flex: 1; display: flex; flex-direction: column; }
   font-size: 12px; font-weight: 600; margin-top: 18px; padding-bottom: 6px;
 }
 
+/* ---------- streak ---------- */
+.streak-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 2px solid var(--line);
+  border-radius: 999px; padding: 8px 18px;
+  font-size: 16px; font-weight: 700;
+}
+.streak-chip b { color: var(--accent); font-size: 18px; }
+.streak-chip .streak-next { font-size: 12px; color: var(--ink-soft); font-weight: 700; }
+.streak-warn { margin: 0; font-size: 13px; color: var(--danger); font-weight: 700; }
+
+/* ---------- award bonus lines ---------- */
+.award .bonus { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.bonus-line {
+  font-size: 15px; font-weight: 700;
+  background: var(--surface); border: 2px solid var(--line);
+  border-radius: 999px; padding: 6px 16px;
+}
+.bonus-line.badge-line { border-color: var(--gold); color: var(--gold); }
+.bonus-line.voucher-line { border-color: var(--go); color: var(--go); }
+.bonus-line.dim { color: var(--ink-soft); font-size: 13px; border-style: dashed; }
+
+/* ---------- badge shelf ---------- */
+.badge-shelf {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 8px;
+  margin-bottom: 18px;
+}
+@media (min-width: 480px) { .badge-shelf { grid-template-columns: repeat(6, 1fr); } }
+.badge-item { display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
+.badge-item .bicon {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  background: var(--surface-2); box-shadow: inset 0 0 0 2px var(--line);
+}
+.badge-item.earned .bicon {
+  background: radial-gradient(circle at 35% 30%, #ffe9a8, var(--gold) 70%);
+  box-shadow: 0 3px 8px var(--btn-shadow);
+}
+.badge-item.locked { opacity: .45; }
+.badge-item.locked .bicon { filter: grayscale(1); }
+.badge-item .bname { font-size: 10.5px; font-weight: 800; line-height: 1.1; }
+.badge-item .bdesc { font-size: 9px; font-weight: 700; color: var(--ink-soft); line-height: 1.15; }
+
+/* ---------- voucher wallet ---------- */
+.voucher-box {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--surface); border: 2px solid var(--line);
+  border-radius: 16px; padding: 12px 16px; margin: 10px 0 16px;
+}
+.voucher-box .voucher-count { font-size: 17px; font-weight: 800; }
+.voucher-box .voucher-count b { color: var(--go); font-size: 20px; }
+
 /* card detail overlay reuses .overlay */
 .detail { display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .detail .stats { color: var(--ink-soft); font-weight: 700; font-size: 15px; }
@@ -419,12 +473,31 @@ nav.tabs {
 
 /* ================= CONFIG — the tunable knobs ================= */
 const CONFIG = {
-  REROLLS: 1,              // swaps allowed per pack
+  REROLLS: 3,              // swaps allowed per pack (swapping resets the streak)
   COOLDOWN_MIN: 20,        // minutes before the next pack unlocks
   SILVER_MIN: 15,          // minutes of activity for a silver sticker
   GOLD_MIN: 40,            // minutes of activity for a gold sticker
   METER_MAX_MIN: 45,       // minutes = full meter bar
+  VOUCHER_EVERY: 5,        // finished activities per Parent Voucher (each badge grants +1)
 };
+
+/* Badges: streak = best run of finishes without swapping; cat = total finishes
+   in a category; variety = at least one finish in every category. All badges are
+   derived from save data, so threshold changes apply retroactively. */
+const BADGES = [
+  { id: 'streak2',     kind: 'streak',  need: 2,  emoji: '🔥', name: 'Warm-Up',        desc: '2 keeps in a row' },
+  { id: 'streak3',     kind: 'streak',  need: 3,  emoji: '🔥', name: 'On a Roll',      desc: '3 keeps in a row' },
+  { id: 'streak5',     kind: 'streak',  need: 5,  emoji: '🔥', name: 'Hot Streak',     desc: '5 keeps in a row' },
+  { id: 'streak8',     kind: 'streak',  need: 8,  emoji: '🔥', name: 'Unstoppable',    desc: '8 keeps in a row' },
+  { id: 'streak12',    kind: 'streak',  need: 12, emoji: '🔥', name: 'Pack Legend',    desc: '12 keeps in a row' },
+  { id: 'cat-make',    kind: 'cat', cat: 'make',    need: 5, emoji: '🎨', name: 'Maker Medal',     desc: '5 MAKE cards done' },
+  { id: 'cat-move',    kind: 'cat', cat: 'move',    need: 5, emoji: '🏃', name: 'Mover Medal',     desc: '5 MOVE cards done' },
+  { id: 'cat-explore', kind: 'cat', cat: 'explore', need: 5, emoji: '🧭', name: 'Explorer Medal',  desc: '5 EXPLORE cards done' },
+  { id: 'cat-play',    kind: 'cat', cat: 'play',    need: 5, emoji: '🎪', name: 'Player Medal',    desc: '5 PLAY cards done' },
+  { id: 'cat-collect', kind: 'cat', cat: 'collect', need: 5, emoji: '🗃️', name: 'Collector Medal', desc: '5 COLLECT cards done' },
+  { id: 'cat-chill',   kind: 'cat', cat: 'chill',   need: 5, emoji: '🌙', name: 'Chill Medal',     desc: '5 CHILL cards done' },
+  { id: 'rainbow',     kind: 'variety', emoji: '🌈', name: 'Rainbow',       desc: 'Every category at least once' },
+];
 
 /* ================= ACTIVITY DATABASE =================
    ids are permanent — save data is keyed on them.
@@ -535,9 +608,13 @@ function freshSave() {
     phase: 'idle',          // idle | revealed | active
     cardId: null,
     rerollsLeft: CONFIG.REROLLS,
+    swapped: false,         // did this draw use a swap? (breaks the streak)
     startedAt: null,        // ms epoch when "Let's do it" tapped
     cooldownUntil: 0,       // ms epoch when next pack unlocks
     collection: {},         // id -> { count, best, minutes }
+    streak: 0,              // current run of finishes without swapping
+    bestStreak: 0,          // lifetime best (streak badges derive from this)
+    redeemedVouchers: 0,    // vouchers a parent has cashed in
   };
 }
 
@@ -612,6 +689,40 @@ function tierFor(minutes) {
 }
 function tierEmoji(t) { return { bronze: '★', silver: '★', gold: '★' }[t]; }
 
+/* ---- streak / badge / voucher math (all derived from save) ---- */
+function totalDone() {
+  return Object.entries(save.collection)
+    .filter(([id]) => getActivity(id))
+    .reduce((sum, [, e]) => sum + e.count, 0);
+}
+function catDone(cat) {
+  return Object.entries(save.collection)
+    .filter(([id]) => getActivity(id) && getActivity(id).cat === cat)
+    .reduce((sum, [, e]) => sum + e.count, 0);
+}
+function badgeEarned(b) {
+  if (b.kind === 'streak')  return save.bestStreak >= b.need;
+  if (b.kind === 'cat')     return catDone(b.cat) >= b.need;
+  if (b.kind === 'variety') return Object.keys(CATS).every(c => catDone(c) >= 1);
+  return false;
+}
+function earnedBadgeIds() { return BADGES.filter(badgeEarned).map(b => b.id); }
+function vouchersEarned() {
+  return Math.floor(totalDone() / CONFIG.VOUCHER_EVERY) + earnedBadgeIds().length;
+}
+function vouchersAvailable() {
+  return Math.max(0, vouchersEarned() - (save.redeemedVouchers || 0));
+}
+function nextStreakBadge() {
+  return BADGES.find(b => b.kind === 'streak' && b.need > save.streak) || null;
+}
+function streakChipHTML() {
+  if (save.streak < 1) return '';
+  const next = nextStreakBadge();
+  const hint = next ? ` · ${next.name} at ${next.need}` : ' · MAX!';
+  return `<div class="streak-chip">🔥 Streak: <b>${save.streak}</b><span class="streak-next">${hint}</span></div>`;
+}
+
 function cardHTML(act, opts = {}) {
   const cat = CATS[act.cat];
   const stickers = save.collection[act.id];
@@ -668,7 +779,8 @@ function renderIdle() {
         <h2 style="margin:0">Next pack charging...</h2>
         <div class="clock" id="cd-clock">${fmtClock(save.cooldownUntil - now)}</div>
         <p class="hint" style="margin:0">Go finish your fun — it will be ready soon!</p>
-      </div>`;
+      </div>
+      ${streakChipHTML()}`;
     ticker = setInterval(() => {
       const left = save.cooldownUntil - Date.now();
       if (left <= 0) { render(); return; }
@@ -686,7 +798,8 @@ function renderIdle() {
       </span>
       <span class="burst" id="burst"></span>
     </button>
-    <p class="hint">Tap the pack to open it!</p>`;
+    <p class="hint">Tap the pack to open it!</p>
+    ${streakChipHTML()}`;
   $('#pack-btn').addEventListener('click', openPack, { once: true });
 }
 
@@ -695,6 +808,7 @@ function openPack() {
   save.phase = 'revealed';
   save.cardId = card.id;
   save.rerollsLeft = CONFIG.REROLLS;
+  save.swapped = false;
   persist();
 
   if (reduceMotion) { renderRevealed(false); return; }
@@ -725,8 +839,10 @@ function openPack() {
 function renderRevealed(instant) {
   clearTicker();
   const act = getActivity(save.cardId);
+  const streakWarn = (save.streak > 0 && save.rerollsLeft > 0 && !save.swapped)
+    ? `<p class="hint streak-warn">Swapping ends your 🔥${save.streak} streak!</p>` : '';
   const swapLabel = save.rerollsLeft > 0
-    ? `<button class="btn ghost" id="swap-btn" type="button">🔄 Swap it (${save.rerollsLeft} left)</button>`
+    ? `<button class="btn ghost" id="swap-btn" type="button">🔄 Swap it (${save.rerollsLeft} left)</button>${streakWarn}`
     : `<p class="hint" style="margin:0">No swaps left — this is the one!</p>`;
   viewPack.innerHTML = `
     <h2>You got...</h2>
@@ -748,6 +864,8 @@ function renderRevealed(instant) {
 function swapCard() {
   if (save.rerollsLeft <= 0) return;
   save.rerollsLeft -= 1;
+  save.swapped = true;
+  save.streak = 0; // swapping breaks the streak the moment it happens
   save.cardId = pickCard(save.cardId).id;
   persist();
   sfxPop();
@@ -806,6 +924,7 @@ function abandonActivity() {
   save.phase = 'idle';
   save.cardId = null;
   save.startedAt = null;
+  save.streak = 0; // putting a card back breaks the streak
   save.cooldownUntil = Date.now() + CONFIG.COOLDOWN_MIN * 60000;
   persist();
   render();
@@ -816,11 +935,21 @@ function finishActivity() {
   const minutes = (Date.now() - save.startedAt) / 60000;
   const tier = tierFor(minutes);
 
+  // snapshot before the update so we can announce what's newly earned
+  const prevBadges = earnedBadgeIds();
+  const prevVouchers = vouchersEarned();
+
   const entry = save.collection[act.id] || { count: 0, best: null, minutes: 0 };
   entry.count += 1;
   entry.minutes += Math.round(minutes);
   if (!entry.best || TIER_RANK[tier] > TIER_RANK[entry.best]) entry.best = tier;
   save.collection[act.id] = entry;
+
+  if (!save.swapped) {
+    save.streak += 1;
+    if (save.streak > save.bestStreak) save.bestStreak = save.streak;
+  }
+  // (if he swapped, the streak was already reset to 0 at swap time)
 
   save.phase = 'idle';
   save.cardId = null;
@@ -828,14 +957,34 @@ function finishActivity() {
   save.cooldownUntil = Date.now() + CONFIG.COOLDOWN_MIN * 60000;
   persist();
 
+  const newBadges = BADGES.filter(b => !prevBadges.includes(b.id) && badgeEarned(b));
+  const newVouchers = vouchersEarned() - prevVouchers;
+
   sfxAward();
-  showAward(act, tier, minutes);
+  showAward(act, tier, minutes, newBadges, newVouchers);
 }
 
-function showAward(act, tier, minutes) {
+function showAward(act, tier, minutes, newBadges = [], newVouchers = 0) {
   const tierName = { bronze: 'BRONZE', silver: 'SILVER', gold: 'GOLD' }[tier];
   const medal = { bronze: '🥉', silver: '🥈', gold: '🥇' }[tier];
   const mins = Math.max(1, Math.round(minutes));
+
+  let bonus = '';
+  if (save.streak >= 2) {
+    bonus += `<div class="bonus-line">🔥 Streak: <b>${save.streak}</b> in a row!</div>`;
+  } else if (save.streak === 1) {
+    bonus += `<div class="bonus-line">🔥 Streak started!</div>`;
+  }
+  for (const b of newBadges) {
+    bonus += `<div class="bonus-line badge-line">${b.emoji} NEW BADGE: <b>${b.name}</b>!</div>`;
+  }
+  if (newVouchers > 0) {
+    bonus += `<div class="bonus-line voucher-line">🎟️ Parent Voucher earned${newVouchers > 1 ? ` ×${newVouchers}` : ''}!</div>`;
+  } else {
+    const toNext = CONFIG.VOUCHER_EVERY - (totalDone() % CONFIG.VOUCHER_EVERY);
+    bonus += `<div class="bonus-line dim">🎟️ ${toNext} more to your next voucher</div>`;
+  }
+
   const root = $('#overlay-root');
   root.innerHTML = `
     <div class="overlay">
@@ -843,6 +992,7 @@ function showAward(act, tier, minutes) {
         <span class="sticker big ${tier} ${reduceMotion ? '' : 'drop'}">★</span>
         <h2>${medal} ${tierName} sticker!</h2>
         <p>${act.emoji} ${act.name} — you played for ${mins} minute${mins === 1 ? '' : 's'}. Awesome!</p>
+        <div class="bonus">${bonus}</div>
         <button class="btn gold" id="award-ok" type="button">Add to my binder 📖</button>
       </div>
     </div>`;
@@ -871,15 +1021,40 @@ function renderBinder() {
       <span class="times">×${e.count}</span>
     </button>`;
   }).join('');
+  const earned = earnedBadgeIds();
+  const badgeShelf = BADGES.map(b => `
+    <div class="badge-item ${earned.includes(b.id) ? 'earned' : 'locked'}">
+      <span class="bicon">${b.emoji}</span>
+      <span class="bname">${b.name}</span>
+      <span class="bdesc">${b.desc}</span>
+    </div>`).join('');
+
   viewBinder.innerHTML = `
+    <div class="voucher-box">
+      <div class="voucher-count">🎟️ Parent Vouchers: <b>${vouchersAvailable()}</b></div>
+      <button class="btn ghost" id="redeem-btn" type="button" ${vouchersAvailable() < 1 ? 'disabled' : ''}>Redeem</button>
+    </div>
+    <div class="binder-head">
+      <h2>🏅 Badges</h2>
+      <span class="count">${earned.length} / ${BADGES.length}</span>
+    </div>
+    <div class="badge-shelf">${badgeShelf}</div>
     <div class="binder-head">
       <h2>📖 My Binder</h2>
       <span class="count">${owned} / ${ACTIVITIES.length}</span>
     </div>
     <div class="grid">${slots}</div>
-    <div class="binder-foot" id="binder-foot">Activity Packs v1.1</div>`;
+    <div class="binder-foot" id="binder-foot">Activity Packs v1.2</div>`;
   viewBinder.querySelectorAll('.slot').forEach(btn => {
     btn.addEventListener('click', () => showDetail(btn.dataset.id));
+  });
+  $('#redeem-btn').addEventListener('click', () => {
+    if (vouchersAvailable() < 1) return;
+    if (confirm('Grown-ups only: redeem 1 Parent Voucher for the reward?')) {
+      save.redeemedVouchers = (save.redeemedVouchers || 0) + 1;
+      persist();
+      renderBinder();
+    }
   });
   // hidden reset: 5 quick taps on the version line
   let taps = 0, lastTap = 0;
