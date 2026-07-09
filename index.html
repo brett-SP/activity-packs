@@ -496,22 +496,79 @@ const GOOD_MORNING = [
   'The packs missed you overnight. Ready when you are!',
 ];
 
-/* Badges: streak = best run of finishes without swapping; cat = total finishes
-   in a category; variety = at least one finish in every category. All badges are
-   derived from save data, so threshold changes apply retroactively. */
+/* Badges. Kinds:
+   streak  = best run of finishes without swapping
+   cat     = total finishes in a category (bronze/silver/gold tiers)
+   unique  = distinct cards discovered
+   catset  = every card in one category discovered
+   gold    = gold stickers on N different cards
+   pile    = total finishes
+   variety = at least one finish in every category
+   event   = shelf-secret: shows as ??? until triggered (persisted in secretsEarned)
+   egg     = easter egg: INVISIBLE until triggered, pops up as a surprise
+   Everything except event/egg is derived from save data, so threshold changes
+   apply retroactively. */
 const BADGES = [
-  { id: 'streak2',     kind: 'streak',  need: 2,  emoji: '🔥', name: 'Warm-Up',        desc: '2 keeps in a row' },
-  { id: 'streak3',     kind: 'streak',  need: 3,  emoji: '🔥', name: 'On a Roll',      desc: '3 keeps in a row' },
-  { id: 'streak5',     kind: 'streak',  need: 5,  emoji: '🔥', name: 'Hot Streak',     desc: '5 keeps in a row' },
-  { id: 'streak8',     kind: 'streak',  need: 8,  emoji: '🔥', name: 'Unstoppable',    desc: '8 keeps in a row' },
-  { id: 'streak12',    kind: 'streak',  need: 12, emoji: '🔥', name: 'Pack Legend',    desc: '12 keeps in a row' },
-  { id: 'cat-make',    kind: 'cat', cat: 'make',    need: 5, emoji: '🎨', name: 'Maker Medal',     desc: '5 MAKE cards done' },
-  { id: 'cat-move',    kind: 'cat', cat: 'move',    need: 5, emoji: '🏃', name: 'Mover Medal',     desc: '5 MOVE cards done' },
-  { id: 'cat-explore', kind: 'cat', cat: 'explore', need: 5, emoji: '🧭', name: 'Explorer Medal',  desc: '5 EXPLORE cards done' },
-  { id: 'cat-play',    kind: 'cat', cat: 'play',    need: 5, emoji: '🎪', name: 'Player Medal',    desc: '5 PLAY cards done' },
-  { id: 'cat-collect', kind: 'cat', cat: 'collect', need: 5, emoji: '🗃️', name: 'Collector Medal', desc: '5 COLLECT cards done' },
-  { id: 'cat-chill',   kind: 'cat', cat: 'chill',   need: 5, emoji: '🌙', name: 'Chill Medal',     desc: '5 CHILL cards done' },
-  { id: 'rainbow',     kind: 'variety', emoji: '🌈', name: 'Rainbow',       desc: 'Every category at least once' },
+  /* streak ladder */
+  { id: 'streak2',     kind: 'streak',  need: 2,  emoji: '🔥', name: 'Warm-Up',          desc: '2 keeps in a row' },
+  { id: 'streak3',     kind: 'streak',  need: 3,  emoji: '🔥', name: 'On a Roll',        desc: '3 keeps in a row' },
+  { id: 'streak5',     kind: 'streak',  need: 5,  emoji: '🔥', name: 'Hot Streak',       desc: '5 keeps in a row' },
+  { id: 'streak8',     kind: 'streak',  need: 8,  emoji: '🔥', name: 'Unstoppable',      desc: '8 keeps in a row' },
+  { id: 'streak12',    kind: 'streak',  need: 12, emoji: '🔥', name: 'Pack Legend',      desc: '12 keeps in a row' },
+  { id: 'streak16',    kind: 'streak',  need: 16, emoji: '🔥', name: 'Pack Master',      desc: '16 keeps in a row' },
+  { id: 'streak20',    kind: 'streak',  need: 20, emoji: '🔥', name: 'Pack Grandmaster', desc: '20 keeps in a row' },
+  /* category medals, three tiers each */
+  { id: 'cat-make',      kind: 'cat', cat: 'make',    need: 5,  emoji: '🎨', name: 'Maker Bronze',     desc: '5 MAKE cards done' },
+  { id: 'cat-make-s',    kind: 'cat', cat: 'make',    need: 12, emoji: '🎨', name: 'Maker Silver',     desc: '12 MAKE cards done' },
+  { id: 'cat-make-g',    kind: 'cat', cat: 'make',    need: 25, emoji: '🎨', name: 'Maker Gold',       desc: '25 MAKE cards done' },
+  { id: 'cat-move',      kind: 'cat', cat: 'move',    need: 5,  emoji: '🏃', name: 'Mover Bronze',     desc: '5 MOVE cards done' },
+  { id: 'cat-move-s',    kind: 'cat', cat: 'move',    need: 12, emoji: '🏃', name: 'Mover Silver',     desc: '12 MOVE cards done' },
+  { id: 'cat-move-g',    kind: 'cat', cat: 'move',    need: 25, emoji: '🏃', name: 'Mover Gold',       desc: '25 MOVE cards done' },
+  { id: 'cat-explore',   kind: 'cat', cat: 'explore', need: 5,  emoji: '🧭', name: 'Explorer Bronze',  desc: '5 EXPLORE cards done' },
+  { id: 'cat-explore-s', kind: 'cat', cat: 'explore', need: 12, emoji: '🧭', name: 'Explorer Silver',  desc: '12 EXPLORE cards done' },
+  { id: 'cat-explore-g', kind: 'cat', cat: 'explore', need: 25, emoji: '🧭', name: 'Explorer Gold',    desc: '25 EXPLORE cards done' },
+  { id: 'cat-play',      kind: 'cat', cat: 'play',    need: 5,  emoji: '🎪', name: 'Player Bronze',    desc: '5 PLAY cards done' },
+  { id: 'cat-play-s',    kind: 'cat', cat: 'play',    need: 12, emoji: '🎪', name: 'Player Silver',    desc: '12 PLAY cards done' },
+  { id: 'cat-play-g',    kind: 'cat', cat: 'play',    need: 25, emoji: '🎪', name: 'Player Gold',      desc: '25 PLAY cards done' },
+  { id: 'cat-collect',   kind: 'cat', cat: 'collect', need: 5,  emoji: '🗃️', name: 'Collector Bronze', desc: '5 COLLECT cards done' },
+  { id: 'cat-collect-s', kind: 'cat', cat: 'collect', need: 12, emoji: '🗃️', name: 'Collector Silver', desc: '12 COLLECT cards done' },
+  { id: 'cat-collect-g', kind: 'cat', cat: 'collect', need: 25, emoji: '🗃️', name: 'Collector Gold',   desc: '25 COLLECT cards done' },
+  { id: 'cat-chill',     kind: 'cat', cat: 'chill',   need: 5,  emoji: '🌙', name: 'Chill Bronze',     desc: '5 CHILL cards done' },
+  { id: 'cat-chill-s',   kind: 'cat', cat: 'chill',   need: 12, emoji: '🌙', name: 'Chill Silver',     desc: '12 CHILL cards done' },
+  { id: 'cat-chill-g',   kind: 'cat', cat: 'chill',   need: 25, emoji: '🌙', name: 'Chill Gold',       desc: '25 CHILL cards done' },
+  /* deck discovery */
+  { id: 'unique10',  kind: 'unique', need: 10, emoji: '🔍', name: 'Deck Explorer',   desc: '10 different cards found' },
+  { id: 'unique25',  kind: 'unique', need: 25, emoji: '🔭', name: 'Deck Voyager',    desc: '25 different cards found' },
+  { id: 'unique50',  kind: 'unique', need: 50, emoji: '🚀', name: 'Deck Astronaut',  desc: '50 different cards found' },
+  { id: 'unique-all',kind: 'unique', need: 0,  emoji: '👑', name: 'Master Set',      desc: 'EVERY card found' },
+  /* full category sets */
+  { id: 'set-make',    kind: 'catset', cat: 'make',    emoji: '🖌️', name: 'MAKE Set',    desc: 'Every MAKE card found' },
+  { id: 'set-move',    kind: 'catset', cat: 'move',    emoji: '👟', name: 'MOVE Set',    desc: 'Every MOVE card found' },
+  { id: 'set-explore', kind: 'catset', cat: 'explore', emoji: '🌲', name: 'EXPLORE Set', desc: 'Every EXPLORE card found' },
+  { id: 'set-play',    kind: 'catset', cat: 'play',    emoji: '🪅', name: 'PLAY Set',    desc: 'Every PLAY card found' },
+  { id: 'set-collect', kind: 'catset', cat: 'collect', emoji: '💼', name: 'COLLECT Set', desc: 'Every COLLECT card found' },
+  { id: 'set-chill',   kind: 'catset', cat: 'chill',   emoji: '🍵', name: 'CHILL Set',   desc: 'Every CHILL card found' },
+  /* gold mastery */
+  { id: 'gold1',  kind: 'gold', need: 1,  emoji: '🌟', name: 'First Gold',    desc: 'A gold sticker on any card' },
+  { id: 'gold5',  kind: 'gold', need: 5,  emoji: '💰', name: 'Gold Rush',     desc: 'Gold stickers on 5 cards' },
+  { id: 'gold15', kind: 'gold', need: 15, emoji: '🏆', name: 'Gold Champion', desc: 'Gold stickers on 15 cards' },
+  /* sticker pile */
+  { id: 'pile10', kind: 'pile', need: 10, emoji: '⭐', name: 'Sticker Pile',     desc: '10 activities finished' },
+  { id: 'pile30', kind: 'pile', need: 30, emoji: '🌠', name: 'Sticker Mountain', desc: '30 activities finished' },
+  { id: 'pile75', kind: 'pile', need: 75, emoji: '🌌', name: 'Sticker Galaxy',   desc: '75 activities finished' },
+  /* variety */
+  { id: 'rainbow', kind: 'variety', emoji: '🌈', name: 'Rainbow', desc: 'Every category at least once' },
+  /* shelf secrets — show as ??? until triggered */
+  { id: 'early-bird',     kind: 'event', emoji: '🐦', name: 'Early Bird',      desc: 'Finish an activity before 8 in the morning' },
+  { id: 'triple-play',    kind: 'event', emoji: '🎰', name: 'Triple Play',     desc: '3 activities in one day' },
+  { id: 'explorers-gold', kind: 'event', emoji: '🏔️', name: "Explorer's Gold", desc: 'A gold sticker on an EXPLORE card' },
+  { id: 'century',        kind: 'event', emoji: '💯', name: 'Century',         desc: '100 minutes of activities in one day' },
+  /* easter eggs — completely invisible until they pop */
+  { id: 'lucky-seven',    kind: 'egg', emoji: '🍀', name: 'Lucky Seven',    desc: 'You opened your 7th pack!' },
+  { id: 'deja-vu',        kind: 'egg', emoji: '🔮', name: 'Déjà Vu',        desc: 'The same card, two packs in a row. Spooky.' },
+  { id: 'window-shopper', kind: 'egg', emoji: '🛍️', name: 'Window Shopper', desc: 'Used every swap and STILL did the thing' },
+  { id: 'binder-worm',    kind: 'egg', emoji: '🐛', name: 'Binder Worm',    desc: 'Visited your binder 50 times' },
+  { id: 'first-light',    kind: 'egg', emoji: '🌅', name: 'First Light',    desc: 'Opened a pack right when the packs woke up' },
 ];
 
 /* ================= ACTIVITY DATABASE =================
@@ -644,6 +701,11 @@ function freshSave() {
     bestStreak: 0,          // lifetime best (streak badges derive from this)
     redeemedVouchers: 0,    // vouchers a parent has cashed in
     lastGreetDate: '',      // last local date the good-morning greeting was shown
+    secretsEarned: [],      // event + egg badge ids, persisted when triggered
+    packsOpened: 0,         // lifetime packs opened (lucky-seven)
+    binderVisits: 0,        // lifetime binder opens (binder-worm)
+    lastFirstDraw: '',      // first card revealed from the previous pack (deja-vu)
+    day: { date: '', finishes: 0, minutes: 0 }, // daily counters (triple-play, century)
   };
 }
 
@@ -729,11 +791,58 @@ function catDone(cat) {
     .filter(([id]) => getActivity(id) && getActivity(id).cat === cat)
     .reduce((sum, [, e]) => sum + e.count, 0);
 }
+function uniqueDiscovered() {
+  return Object.keys(save.collection).filter(id => getActivity(id)).length;
+}
+function catDiscovered(cat) {
+  return Object.keys(save.collection).filter(id => getActivity(id) && getActivity(id).cat === cat).length;
+}
+function goldCardCount() {
+  return Object.entries(save.collection)
+    .filter(([id, e]) => getActivity(id) && e.best === 'gold').length;
+}
 function badgeEarned(b) {
   if (b.kind === 'streak')  return save.bestStreak >= b.need;
   if (b.kind === 'cat')     return catDone(b.cat) >= b.need;
+  if (b.kind === 'unique')  return uniqueDiscovered() >= (b.need || ACTIVITIES.length);
+  if (b.kind === 'catset')  return catDiscovered(b.cat) >= ACTIVITIES.filter(a => a.cat === b.cat).length;
+  if (b.kind === 'gold')    return goldCardCount() >= b.need;
+  if (b.kind === 'pile')    return totalDone() >= b.need;
   if (b.kind === 'variety') return Object.keys(CATS).every(c => catDone(c) >= 1);
+  if (b.kind === 'event' || b.kind === 'egg') return (save.secretsEarned || []).includes(b.id);
   return false;
+}
+/* trigger a secret (event/egg) badge; returns the badge if newly earned */
+function triggerSecret(id) {
+  if (!save.secretsEarned) save.secretsEarned = [];
+  if (save.secretsEarned.includes(id)) return null;
+  save.secretsEarned.push(id);
+  return BADGES.find(b => b.id === id) || null;
+}
+/* roll the daily counters to today if the date changed */
+function touchDay() {
+  const t = todayStr();
+  if (!save.day || save.day.date !== t) save.day = { date: t, finishes: 0, minutes: 0 };
+}
+/* surprise popup for eggs triggered outside the finish flow */
+function showSecretBadge(badges) {
+  if (!badges.length) return;
+  sfxAward();
+  const root = $('#overlay-root');
+  const lines = badges.map(b => `
+    <span style="font-size:60px">${b.emoji}</span>
+    <h2>SECRET BADGE!</h2>
+    <p><b>${b.name}</b> — ${b.desc}</p>`).join('');
+  root.innerHTML = `
+    <div class="overlay">
+      <div class="award">
+        <span style="font-size:40px">🤫</span>
+        ${lines}
+        <div class="bonus"><div class="bonus-line voucher-line">🎟️ +${badges.length} Parent Voucher${badges.length > 1 ? 's' : ''}!</div></div>
+        <button class="btn gold" id="secret-ok" type="button">No way!! 🎉</button>
+      </div>
+    </div>`;
+  $('#secret-ok').addEventListener('click', () => { root.innerHTML = ''; });
 }
 function earnedBadgeIds() { return BADGES.filter(badgeEarned).map(b => b.id); }
 function vouchersEarned() {
@@ -902,6 +1011,19 @@ function openPack() {
   save.cardId = card.id;
   save.rerollsLeft = CONFIG.REROLLS;
   save.swapped = false;
+
+  // easter-egg triggers that live on the pack-opening moment
+  save.packsOpened = (save.packsOpened || 0) + 1;
+  const eggs = [];
+  if (save.packsOpened >= 7) { const b = triggerSecret('lucky-seven'); if (b) eggs.push(b); }
+  if (save.lastFirstDraw && save.lastFirstDraw === card.id) {
+    const b = triggerSecret('deja-vu'); if (b) eggs.push(b);
+  }
+  save.lastFirstDraw = card.id;
+  const sinceWake = (new Date().getHours() * 60 + new Date().getMinutes()) - parseHM(CONFIG.WAKE);
+  if (sinceWake >= 0 && sinceWake < 15) { const b = triggerSecret('first-light'); if (b) eggs.push(b); }
+  if (eggs.length) setTimeout(() => showSecretBadge(eggs), reduceMotion ? 600 : 2200);
+
   persist();
 
   if (reduceMotion) { renderRevealed(false); return; }
@@ -1046,6 +1168,16 @@ function finishActivity() {
   }
   // (if he swapped, the streak was already reset to 0 at swap time)
 
+  // daily counters + secret triggers that live on the finish moment
+  touchDay();
+  save.day.finishes += 1;
+  save.day.minutes += Math.round(minutes);
+  if (new Date().getHours() < 8) triggerSecret('early-bird');
+  if (save.day.finishes >= 3) triggerSecret('triple-play');
+  if (save.day.minutes >= 100) triggerSecret('century');
+  if (act.cat === 'explore' && tier === 'gold') triggerSecret('explorers-gold');
+  if (save.swapped && save.rerollsLeft === 0) triggerSecret('window-shopper');
+
   save.phase = 'idle';
   save.cardId = null;
   save.startedAt = null;
@@ -1116,13 +1248,46 @@ function renderBinder() {
       <span class="times">×${e.count}</span>
     </button>`;
   }).join('');
+  // binder-worm egg: counts every visit to this page
+  save.binderVisits = (save.binderVisits || 0) + 1;
+  const wormEgg = save.binderVisits >= 50 ? triggerSecret('binder-worm') : null;
+  persist();
+
   const earned = earnedBadgeIds();
-  const badgeShelf = BADGES.map(b => `
-    <div class="badge-item ${earned.includes(b.id) ? 'earned' : 'locked'}">
+  const shelfBadges = BADGES.filter(b => b.kind !== 'egg');
+  const badgeShelf = shelfBadges.map(b => {
+    const got = earned.includes(b.id);
+    if (b.kind === 'event' && !got) {
+      return `
+      <div class="badge-item locked">
+        <span class="bicon">❔</span>
+        <span class="bname">Secret Badge</span>
+        <span class="bdesc">???</span>
+      </div>`;
+    }
+    return `
+    <div class="badge-item ${got ? 'earned' : 'locked'}">
       <span class="bicon">${b.emoji}</span>
       <span class="bname">${b.name}</span>
       <span class="bdesc">${b.desc}</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+  const shelfEarned = shelfBadges.filter(b => earned.includes(b.id)).length;
+
+  // easter eggs stay entirely invisible until found; found ones get their own row
+  const foundEggs = BADGES.filter(b => b.kind === 'egg' && earned.includes(b.id));
+  const eggSection = foundEggs.length ? `
+    <div class="binder-head">
+      <h2>🤫 Secret Finds</h2>
+      <span class="count">${foundEggs.length} / ???</span>
+    </div>
+    <div class="badge-shelf">${foundEggs.map(b => `
+      <div class="badge-item earned">
+        <span class="bicon">${b.emoji}</span>
+        <span class="bname">${b.name}</span>
+        <span class="bdesc">${b.desc}</span>
+      </div>`).join('')}
+    </div>` : '';
 
   viewBinder.innerHTML = `
     <div class="voucher-box">
@@ -1131,15 +1296,16 @@ function renderBinder() {
     </div>
     <div class="binder-head">
       <h2>🏅 Badges</h2>
-      <span class="count">${earned.length} / ${BADGES.length}</span>
+      <span class="count">${shelfEarned} / ${shelfBadges.length}</span>
     </div>
     <div class="badge-shelf">${badgeShelf}</div>
+    ${eggSection}
     <div class="binder-head">
       <h2>📖 My Binder</h2>
       <span class="count">${owned} / ${ACTIVITIES.length}</span>
     </div>
     <div class="grid">${slots}</div>
-    <div class="binder-foot" id="binder-foot">Activity Packs v1.5</div>`;
+    <div class="binder-foot" id="binder-foot">Activity Packs v1.6</div>`;
   viewBinder.querySelectorAll('.slot').forEach(btn => {
     btn.addEventListener('click', () => showDetail(btn.dataset.id));
   });
@@ -1151,6 +1317,7 @@ function renderBinder() {
       renderBinder();
     }
   });
+  if (wormEgg) showSecretBadge([wormEgg]);
   // hidden reset: 5 quick taps on the version line
   let taps = 0, lastTap = 0;
   $('#binder-foot').addEventListener('click', () => {
