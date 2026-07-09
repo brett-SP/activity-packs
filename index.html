@@ -471,6 +471,9 @@ nav.tabs {
 <script>
 'use strict';
 
+/* Bump on every deploy — the auto-updater compares this against the server copy. */
+const APP_VERSION = 'v1.7';
+
 /* ================= CONFIG — the tunable knobs ================= */
 const CONFIG = {
   REROLLS: 3,              // swaps allowed per pack (swapping resets the streak)
@@ -918,6 +921,7 @@ function clearTicker() { if (ticker) { clearInterval(ticker); ticker = null; } }
 function render() {
   clearTicker();
   updateBadge();
+  maybeApplyUpdate(); // a deferred update applies as soon as we hit a calm screen
   // bedtime: everything except an already-started activity goes to sleep
   if (inSleepWindow() && save.phase !== 'active') { renderSleep(); return; }
   if (save.phase === 'idle') renderIdle();
@@ -962,6 +966,30 @@ function maybeGoodMorning() {
     </div>`;
   $('#gm-ok').addEventListener('click', () => { root.innerHTML = ''; });
 }
+
+/* ---- auto-update: reload when a newer version is on the server ---- */
+let pendingVersion = null;
+async function checkForUpdate() {
+  try {
+    const res = await fetch(location.href, { cache: 'no-store' });
+    if (!res.ok) return;
+    const m = (await res.text()).match(/APP_VERSION = '([^']+)'/);
+    if (!m || m[1] === APP_VERSION) return;
+    if (sessionStorage.getItem('ap-reloaded-for') === m[1]) return; // one attempt per version per session
+    pendingVersion = m[1];
+    maybeApplyUpdate();
+  } catch (e) { /* offline or flaky network — try again next resume */ }
+}
+function maybeApplyUpdate() {
+  if (!pendingVersion) return;
+  if (save.phase === 'active') return;              // never interrupt an activity in progress
+  if ($('#overlay-root').innerHTML !== '') return;  // never yank an open popup
+  sessionStorage.setItem('ap-reloaded-for', pendingVersion);
+  persist();
+  location.reload();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
+setInterval(checkForUpdate, 30 * 60000);
 
 /* watchdog: if bedtime arrives while a screen is sitting open, put it to sleep */
 setInterval(() => {
@@ -1305,7 +1333,7 @@ function renderBinder() {
       <span class="count">${owned} / ${ACTIVITIES.length}</span>
     </div>
     <div class="grid">${slots}</div>
-    <div class="binder-foot" id="binder-foot">Activity Packs v1.6</div>`;
+    <div class="binder-foot" id="binder-foot">Activity Packs ${APP_VERSION}</div>`;
   viewBinder.querySelectorAll('.slot').forEach(btn => {
     btn.addEventListener('click', () => showDetail(btn.dataset.id));
   });
