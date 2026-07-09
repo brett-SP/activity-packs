@@ -479,7 +479,22 @@ const CONFIG = {
   GOLD_MIN: 40,            // minutes of activity for a gold sticker
   METER_MAX_MIN: 45,       // minutes = full meter bar
   VOUCHER_EVERY: 5,        // finished activities per Parent Voucher (each badge grants +1)
+  BEDTIME: '20:00',        // packs go to sleep (24h clock, device local time)
+  WAKE: '07:00',           // packs wake up
 };
+
+const GOOD_NIGHT = [
+  'The packs are fast asleep.',
+  'Even legendary cards need their rest.',
+  'The binder is tucked in. You should be too!',
+  'Shhh... the packs are recharging their sparkles.',
+];
+const GOOD_MORNING = [
+  'The packs woke up before you did!',
+  'Rise and shine! A fresh pack is stretching its foil.',
+  'Today\'s packs are extra sparkly.',
+  'The packs missed you overnight. Ready when you are!',
+];
 
 /* Badges: streak = best run of finishes without swapping; cat = total finishes
    in a category; variety = at least one finish in every category. All badges are
@@ -615,6 +630,7 @@ function freshSave() {
     streak: 0,              // current run of finishes without swapping
     bestStreak: 0,          // lifetime best (streak badges derive from this)
     redeemedVouchers: 0,    // vouchers a parent has cashed in
+    lastGreetDate: '',      // last local date the good-morning greeting was shown
   };
 }
 
@@ -713,6 +729,22 @@ function vouchersEarned() {
 function vouchersAvailable() {
   return Math.max(0, vouchersEarned() - (save.redeemedVouchers || 0));
 }
+/* ---- sleep schedule ---- */
+function parseHM(hm) { const [h, m] = hm.split(':').map(Number); return h * 60 + m; }
+function inSleepWindow(d = new Date()) {
+  const now = d.getHours() * 60 + d.getMinutes();
+  const bed = parseHM(CONFIG.BEDTIME), wake = parseHM(CONFIG.WAKE);
+  return bed > wake ? (now >= bed || now < wake) : (now >= bed && now < wake);
+}
+function wakeLabel() {
+  const [h, m] = CONFIG.WAKE.split(':').map(Number);
+  const h12 = ((h + 11) % 12) + 1;
+  return `${h12}:${String(m).padStart(2, '0')}`;
+}
+function todayStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function nextStreakBadge() {
   return BADGES.find(b => b.kind === 'streak' && b.need > save.streak) || null;
 }
@@ -764,10 +796,58 @@ function clearTicker() { if (ticker) { clearInterval(ticker); ticker = null; } }
 function render() {
   clearTicker();
   updateBadge();
+  // bedtime: everything except an already-started activity goes to sleep
+  if (inSleepWindow() && save.phase !== 'active') { renderSleep(); return; }
   if (save.phase === 'idle') renderIdle();
   else if (save.phase === 'revealed') renderRevealed(true);
   else if (save.phase === 'active') renderActive();
+  maybeGoodMorning();
 }
+
+/* ----- asleep: between bedtime and wake time ----- */
+function renderSleep() {
+  const msg = GOOD_NIGHT[new Date().getDate() % GOOD_NIGHT.length];
+  const streakLine = save.streak > 0
+    ? `<p class="hint" style="margin:0">Your 🔥${save.streak} streak is tucked in safe.</p>` : '';
+  viewPack.innerHTML = `
+    <div class="zzz">🌙</div>
+    <div class="cooldown-box">
+      <h2 style="margin:0">Good night!</h2>
+      <p class="hint" style="margin:0">${msg}</p>
+      ${streakLine}
+      <p class="hint" style="margin:0">See you at <b>${wakeLabel()}</b> in the morning! 🌞</p>
+    </div>`;
+  ticker = setInterval(() => { if (!inSleepWindow()) render(); }, 30000);
+}
+
+/* ----- first open of the day gets a greeting ----- */
+function maybeGoodMorning() {
+  if (save.phase !== 'idle' || inSleepWindow()) return;
+  if (save.lastGreetDate === todayStr()) return;
+  if ($('#overlay-root').innerHTML !== '') return;
+  save.lastGreetDate = todayStr();
+  persist();
+  const msg = GOOD_MORNING[new Date().getDate() % GOOD_MORNING.length];
+  const root = $('#overlay-root');
+  root.innerHTML = `
+    <div class="overlay">
+      <div class="award">
+        <span style="font-size:64px">🌞</span>
+        <h2>Good morning!</h2>
+        <p>${msg}</p>
+        <button class="btn gold" id="gm-ok" type="button">Let's go! 🎁</button>
+      </div>
+    </div>`;
+  $('#gm-ok').addEventListener('click', () => { root.innerHTML = ''; });
+}
+
+/* watchdog: if bedtime arrives while a screen is sitting open, put it to sleep */
+setInterval(() => {
+  const sleeping = !!viewPack.querySelector('.cooldown-box h2') &&
+                   viewPack.textContent.includes('Good night');
+  const shouldSleep = inSleepWindow() && save.phase !== 'active';
+  if (shouldSleep !== sleeping && viewPack.offsetParent !== null) render();
+}, 30000);
 
 /* ----- idle: pack ready, or cooling down ----- */
 function renderIdle() {
@@ -1046,7 +1126,7 @@ function renderBinder() {
       <span class="count">${owned} / ${ACTIVITIES.length}</span>
     </div>
     <div class="grid">${slots}</div>
-    <div class="binder-foot" id="binder-foot">Activity Packs v1.3</div>`;
+    <div class="binder-foot" id="binder-foot">Activity Packs v1.4</div>`;
   viewBinder.querySelectorAll('.slot').forEach(btn => {
     btn.addEventListener('click', () => showDetail(btn.dataset.id));
   });
