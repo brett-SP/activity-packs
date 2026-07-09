@@ -474,7 +474,7 @@ nav.tabs {
 /* ================= CONFIG — the tunable knobs ================= */
 const CONFIG = {
   REROLLS: 3,              // swaps allowed per pack (swapping resets the streak)
-  COOLDOWN_MIN: 20,        // minutes before the next pack unlocks
+  COOLDOWN_MIN: 20,        // minutes from STARTING an activity until the next pack unlocks
   SILVER_MIN: 15,          // minutes of activity for a silver sticker
   GOLD_MIN: 40,            // minutes of activity for a gold sticker
   METER_MAX_MIN: 45,       // minutes = full meter bar
@@ -875,6 +875,8 @@ function swapCard() {
 function commitCard() {
   save.phase = 'active';
   save.startedAt = Date.now();
+  // the next pack charges while he plays — cooldown anchors to the START
+  save.cooldownUntil = save.startedAt + CONFIG.COOLDOWN_MIN * 60000;
   persist();
   renderActive();
 }
@@ -925,7 +927,7 @@ function abandonActivity() {
   save.cardId = null;
   save.startedAt = null;
   save.streak = 0; // putting a card back breaks the streak
-  save.cooldownUntil = Date.now() + CONFIG.COOLDOWN_MIN * 60000;
+  // cooldown was already anchored at commit time — putting it back doesn't restart it
   persist();
   render();
 }
@@ -954,7 +956,7 @@ function finishActivity() {
   save.phase = 'idle';
   save.cardId = null;
   save.startedAt = null;
-  save.cooldownUntil = Date.now() + CONFIG.COOLDOWN_MIN * 60000;
+  // cooldown was anchored at commit time — a long activity means no wait at all
   persist();
 
   const newBadges = BADGES.filter(b => !prevBadges.includes(b.id) && badgeEarned(b));
@@ -1044,7 +1046,7 @@ function renderBinder() {
       <span class="count">${owned} / ${ACTIVITIES.length}</span>
     </div>
     <div class="grid">${slots}</div>
-    <div class="binder-foot" id="binder-foot">Activity Packs v1.2</div>`;
+    <div class="binder-foot" id="binder-foot">Activity Packs v1.3</div>`;
   viewBinder.querySelectorAll('.slot').forEach(btn => {
     btn.addEventListener('click', () => showDetail(btn.dataset.id));
   });
