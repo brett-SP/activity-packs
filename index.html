@@ -547,6 +547,12 @@ const ACTIVITIES = [
   { id: "album-cover",       cat: "make", emoji: "🎵", name: "Album Cover Artist", flavor: "Play video game music and draw the album cover it deserves." },
   { id: "arcade-design",     cat: "make", emoji: "🕹️", name: "Arcade Inventor",    flavor: "Design your own arcade cabinet on paper: the art, the controls, the game." },
   { id: "clicker-paper",     cat: "make", emoji: "🍪", name: "Clicker Tycoon",     flavor: "Invent a clicker game on paper. What do you collect? Draw the upgrade tree!" },
+  { id: "monster-maker",     cat: "make", emoji: "❤️", name: "Monster Maker",      flavor: "Invent a new Undertale monster. Draw it and decide: what does SPARE do?" },
+  { id: "circus-character",  cat: "make", emoji: "🤡", name: "Circus Newcomer",    flavor: "Design a new character stuck in the Digital Circus. Name them and their glitch." },
+  { id: "ninjago-garage",    cat: "make", emoji: "🐉", name: "Ninja Garage",       flavor: "Build a Ninjago dragon or vehicle from LEGO. What is its special power?" },
+  { id: "joker-forge",       cat: "make", emoji: "🎴", name: "Joker Forge",        flavor: "Invent 3 new Balatro Jokers on paper. Make one totally game-breaking." },
+  { id: "dream-menu",        cat: "make", emoji: "🍣", name: "Dream Menu",         flavor: "Design your dream restaurant menu: sushi, pizza, olives, anything. Add the prices." },
+  { id: "kitty-koala-comic", cat: "make", emoji: "🐨", name: "Cat & Koala Co.",    flavor: "Draw a comic where a cat and a koala pull off a heist." },
 
   /* ---- MOVE ---- */
   { id: "nerf-range",        cat: "move", emoji: "🎯", name: "Target Range",       flavor: "Set up 6 targets for a Nerf course. Score a round, then beat your score." },
@@ -559,6 +565,7 @@ const ACTIVITIES = [
   { id: "stuffy-free-throw", cat: "move", emoji: "🧺", name: "Stuffy Free Throws", flavor: "Set up a basket across the room. How many stuffy shots out of 10?" },
   { id: "floor-lava",        cat: "move", emoji: "🌋", name: "The Floor Is Lava",  flavor: "Get from your room to the kitchen without touching the floor." },
   { id: "hero-training",     cat: "move", emoji: "💪", name: "Hero Training",      flavor: "Training montage: 10 jumps, 10 kicks, 10 rolls, victory pose. Three rounds." },
+  { id: "dodge-practice",    cat: "move", emoji: "💥", name: "Boss Dodge",         flavor: "You are in an Undertale boss fight! Dodge invisible attacks for 3 minutes. Style counts." },
 
   /* ---- EXPLORE ---- */
   { id: "deck-patrol",       cat: "explore", emoji: "🛡️", name: "Deck Patrol",      flavor: "Suit up with a foam sword and patrol the whole deck. Report anything suspicious." },
@@ -572,6 +579,7 @@ const ACTIVITIES = [
   { id: "photo-safari",      cat: "explore", emoji: "📷", name: "Photo Safari",     flavor: "Take 8 super-close-up photos outside. Quiz the family: what IS that?" },
   { id: "yard-speedrun",     cat: "explore", emoji: "🏁", name: "Yard Speedrun",    flavor: "Invent a route around the deck and speedrun it. Three tries, best time." },
   { id: "base-camp",         cat: "explore", emoji: "⛺", name: "Base Camp",        flavor: "Set up an outdoor base on the deck: blanket, supplies, lookout post." },
+  { id: "loot-goblin",       cat: "explore", emoji: "🎒", name: "Loot Goblin",      flavor: "Hunt the deck and yard for the 5 weirdest tiny things. Rank them by rarity." },
 
   /* ---- PLAY ---- */
   { id: "solitaire",         cat: "play", emoji: "🃏", name: "Card Shark",        flavor: "Learn or play a solitaire game with real cards. Win one game." },
@@ -592,6 +600,8 @@ const ACTIVITIES = [
   { id: "wacky-machine",     cat: "play", emoji: "⚙️", name: "Wacky Machine",     flavor: "Build a Tinker Toy machine that does something completely silly." },
   { id: "stuffy-hideout",    cat: "play", emoji: "🙈", name: "Hide Squad",        flavor: "Hide 5 stuffies around the house. Make a checklist for someone to find them." },
   { id: "minecraft-irl",     cat: "play", emoji: "🧊", name: "IRL Crafting",      flavor: "Pick something from Minecraft and build it in the real world, any toys allowed." },
+  { id: "riddle-smith",      cat: "play", emoji: "❓", name: "Riddle Smith",      flavor: "Write 3 riddles about things in your room. Stump the family later." },
+  { id: "rule-bender",       cat: "play", emoji: "🔴", name: "Rule Bender",       flavor: "Invent a new Connect Four rule. Play both sides to test if it is fun." },
 
   /* ---- COLLECT ---- */
   { id: "type-sort-sprint",  cat: "collect", emoji: "🔥", name: "Type Sort Sprint",  flavor: "15-minute timer: sort Pokemon cards by type. Your total is your high score." },
@@ -603,6 +613,7 @@ const ACTIVITIES = [
   { id: "tier-list",         cat: "collect", emoji: "📊", name: "Tier List Time",    flavor: "Make an S-to-F tier list of your fidgets. Be ruthless." },
   { id: "stuffy-census",     cat: "collect", emoji: "🧸", name: "Stuffy Census",     flavor: "Rank your top 10 stuffies. Interview the champion about the victory." },
   { id: "shelf-dig",         cat: "collect", emoji: "🏺", name: "Shelf Archaeologist", flavor: "Excavate one shelf: find 3 forgotten treasures and put them where you will use them." },
+  { id: "great-count",       cat: "collect", emoji: "🔢", name: "The Great Count",   flavor: "Guess how many cards are in one unsorted stack. Count to check. How close were you?" },
 
   /* ---- CHILL ---- */
   { id: "comic-cave",        cat: "chill", emoji: "📚", name: "Comic Cave",        flavor: "Build a cozy nest and read a graphic novel in it." },
@@ -611,6 +622,8 @@ const ACTIVITIES = [
   { id: "loft-hq",           cat: "chill", emoji: "🛏️", name: "Loft HQ",           flavor: "Turn your loft bed into a headquarters: supplies, gadgets, mission board." },
   { id: "power-snack",       cat: "chill", emoji: "🥪", name: "Power-Up Chef",     flavor: "Build yourself a power-up snack worthy of a video game. Name it." },
   { id: "story-boss",        cat: "chill", emoji: "📖", name: "Story Time Boss",   flavor: "Read a story out loud to your stuffies. Do all the voices." },
+  { id: "joke-writer",       cat: "chill", emoji: "😂", name: "Joke Writer",       flavor: "Write 5 brand-new jokes. Try them at dinner and count the laughs." },
+  { id: "number-wizard",     cat: "chill", emoji: "🧮", name: "Number Wizard",     flavor: "Invent 5 math problems tricky enough to stump a grown-up. Know your answers!" },
 ];
 
 /* ================= SAVE ================= */
@@ -1126,7 +1139,7 @@ function renderBinder() {
       <span class="count">${owned} / ${ACTIVITIES.length}</span>
     </div>
     <div class="grid">${slots}</div>
-    <div class="binder-foot" id="binder-foot">Activity Packs v1.4</div>`;
+    <div class="binder-foot" id="binder-foot">Activity Packs v1.5</div>`;
   viewBinder.querySelectorAll('.slot').forEach(btn => {
     btn.addEventListener('click', () => showDetail(btn.dataset.id));
   });
